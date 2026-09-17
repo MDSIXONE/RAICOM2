@@ -1,0 +1,33 @@
+# ROS Catkin build artifacts
+/robot-src/catkin_ws/build/
+/robot-src/catkin_ws/devel/
+/robot-src/catkin_ws/install/
+/robot-src/catkin_ws/log/
+/wsl-simulation/build/
+/wsl-simulation/devel/
+/wsl-simulation/.catkin_workspace
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Local temporary files
+/tmp/*
+!/tmp/.gitkeep
+
+# Large training datasets: track metadata or manifests separately if needed
+/datasets/yolo/*.onnx
+/datasets/yolo/*.pt
+/datasets/yolo/*.pth
+
+# Sensitive machine information
+/robot-information/private/
+
+# Training artifacts
+/runs/*
+
+# Robot disk images (too large to track)
+/dogimage/
+
+# Simulation debug logs
+/*.log

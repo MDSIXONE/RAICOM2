@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Memory Records"
+  short_description: "Maintain project change and learning records"
+  default_prompt: "Use $project-memory-records to update this project's AI work records."

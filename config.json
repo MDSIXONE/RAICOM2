@@ -1,0 +1,17 @@
+{
+  "templates": {
+    "比赛": {
+      "common": ["docs", "scripts", "tmp"],
+      "special": [
+        "competition-rules",
+        "robot-information",
+        "wsl-simulation",
+        "technical-reports",
+        "blender-maps",
+        "datasets",
+        "archive",
+        "robot-src"
+      ]
+    }
+  }
+}

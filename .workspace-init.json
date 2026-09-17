@@ -1,0 +1,27 @@
+{
+  "project_type": "比赛",
+  "reference": "上级仓库 /home/car/RAICOM（结构、技能与配置镜像）",
+  "created_folders": [
+    "competition-rules",
+    "robot-src",
+    "docs",
+    "robot-information",
+    "scripts",
+    "technical-reports",
+    "blender-maps",
+    "wsl-simulation",
+    "datasets",
+    "archive",
+    "tmp",
+    "runs"
+  ],
+  "components": {
+    "agents_md": true,
+    "project_memory_records": true,
+    "github_commit": true,
+    "project_lingo": true,
+    "project_index": true
+  },
+  "notes": "技能采用 RAICOM 项目定制版（非 workspace-init 内置模板）；未复制 RAICOM 的 git 历史、远程、二进制数据集与实机私有资料。",
+  "initialized_at": "2026-09-17"
+}
