@@ -1,6 +1,6 @@
 # RAICOM2 睿抗机器人大赛智能配送项目 结构索引
 
-- 更新时间：2026-09-17
+- 更新时间：2026-10-18
 
 ## 总体结构
 ```
@@ -25,6 +25,7 @@ RAICOM2/
 │   └── private/               # 本机敏感资料（不入库）
 ├── robot-src/                 # ★ 机器端全部源码（唯一机器代码写入区）
 │   ├── catkin_ws/src/         # 机器狗 ROS 包（Catkin 工作空间，容器内编译运行）
+│   │   └── robot_dog_ball_grab/   # 抓球/放球/掉头/编排脚本与球容器脚本（运行不依赖 ROS 编译）
 │   └── host-services/<device>/ # 机器端非 ROS 常驻服务
 ├── scripts/                   # 仓库辅助脚本（update_readme_tree.py）
 ├── technical-reports/         # 技术报告、阶段总结、赛后复盘
@@ -39,6 +40,7 @@ RAICOM2/
 | --- | --- | --- | --- |
 | 赛事规则 | `competition-rules/` | 睿抗国赛物流配送足式规则 PDF 与摘要 | - |
 | 机器狗源码 | `robot-src/catkin_ws/src/` | 机器端 ROS 功能包（本次比赛任务代码存放地） | - |
+| 抓球程序 | `robot-src/catkin_ws/src/robot_dog_ball_grab/` | YOLO 抓球、放球、掉头 180°、一键编排与球容器脚本（机器端独立运行） | - |
 | 机器端非 ROS 服务 | `robot-src/host-services/<device>/` | 机器端常驻服务源码 | - |
 | WSL 离线仿真 | `wsl-simulation/src/` | 离线导航/感知仿真 ROS 包 | - |
 | 离线场地地图 | `blender-maps/ricam_arena/navigation/` | 栅格地图（pgm/yaml/json/png） | - |

@@ -27,6 +27,7 @@ description: 用户使用本项目黑话/口语化指令时使用（如"启动XX
 | --- | --- | --- |
 | 左墙定距直行 | 左墙 30cm 直行到前障，右转 90° 后重复，共三段 | [docs/lingo.md](../../../docs/lingo.md) |
 | 暴露参数 | 把后端可调参数完整放到网页，可视调节并实时保存 | [docs/lingo.md](../../../docs/lingo.md) |
+| 抓取程序 | 机器端 YOLO 抓球/放球/掉头/编排脚本包 `robot_dog_ball_grab` | [docs/lingo.md](../../../docs/lingo.md) |
 
 ## 新增条目流程（维护机制）
 

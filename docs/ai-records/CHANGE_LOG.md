@@ -1,5 +1,13 @@
 # 代码改动记录
 
+## 2026-10-18｜移入 RAICOM 抓取程序（改动完成）
+
+- 目标：把 `D:\WORK\ALLCODE\RAICOM` 里的抓取（抓球/放球）程序移入本仓库。
+- 影响文件：新增 `robot-src/catkin_ws/src/robot_dog_ball_grab/`（`CMakeLists.txt`、`package.xml`、`README.md`、`scripts/` 5 个脚本、`host/` 3 个球容器脚本）；`docs/lingo.md` 与 project-lingo 高频索引新增「抓取程序」词条；`.agents/skills/project-index/INDEX.md` 更新结构与功能索引。
+- 实施：整包复制源目录当前工作区内容（含源仓库尚未提交的 `scripts/yolo_view.py` 与 `CMakeLists.txt` 的 `catkin_install_python` 增项），排除 `__pycache__`/`*.pyc`；包内 README 增加移入说明并补记 `yolo_view.py`。源仓库 `RAICOM` 未删除任何文件。
+- 验证：11 个文件 SHA256 与源目录逐一对齐（0 不一致），目标目录无 `__pycache__`；5 个脚本 `compile()` 语法通过；`git status` 显示仅新增该包目录。未在机器端运行。
+- 遗留风险：源仓库的 `robot-src/host-services/oumax-xgo/ball_yolo_grab.py`（原件副本）与 `restore_mode.py` 未移入，包内 README 的副本同步关系及 `robot_dog_navigation`、`robot_dog_teleop` 交叉引用在本仓库暂不指向现有文件；机器端部署路径未变，尚未同步到机器。
+
 ## 2026-10-18｜按用户要求回退偏航墙面识别改动（改动完成）
 
 - 目标：恢复“偏航后左墙被当作终点”提问之前的墙控代码，保留三段独立参数、运动下限和独立连拍程序。

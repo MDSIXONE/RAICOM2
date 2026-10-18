@@ -9,6 +9,7 @@
 | --- | --- | --- |
 | 左墙定距直行 | 左墙 30cm 直行到前障，右转 90° 后重复，共三段 | [左墙定距直行](#左墙定距直行) |
 | 暴露参数 | 把后端可调参数完整放到网页，可视调节并实时保存 | [暴露参数](#暴露参数) |
+| 抓取程序 | 机器端 YOLO 抓球/放球/掉头/编排脚本包 `robot_dog_ball_grab` | [抓取程序](#抓取程序) |
 
 ## 左墙定距直行
 
@@ -36,3 +37,21 @@
   4. 输入后防抖实时保存，显示待保存、保存中、已保存和失败状态。
 - **不是**：不是只在页面显示后端值；不是需要额外点击保存才生效；不是只暴露部分字段。
 - **权威来源**：`robot-src/host-services/lidar-console/README.md`
+
+## 抓取程序
+
+- **等价说法**：抓球程序、抓取程序、抓球/放球程序、ball_yolo_grab
+- **含义**：指机器端独立运行的 YOLO 抓球脚本包 `robot_dog_ball_grab`（`ball_yolo_grab.py` 抓球、
+  `ball_release.py` 放球、`rotate.py` 掉头 180°、`ball_grab_release.py` 一键编排、`yolo_view.py`
+  检测检查推流），在机器端球容器里直接跑，不是 ROS 节点。
+- **前置条件**：机器端已用本包 `host/setup_ball_container.sh` 配好球容器 `ros-noetic-ball`；
+  `oumax-camera`、`oumax-manual` 服务已停止以释放相机与串口；球模型位于
+  `/home/pi/ros_ws/models/best.onnx`。
+- **精确动作**：
+  1. 在本包 `scripts/` 修改脚本，按包 README 的部署命令上传到机器端（宿主部署路径
+     `/home/pi/oumax-xgo/`，球容器内包路径 `/home/pi/ros_ws/src/robot_dog_ball_grab/`）。
+  2. 先不带 `--enable-motion` 只检测，确认球检测与框半径达标；需要真实动作时再加
+     `--enable-motion`，经 `host/run_ball_in_docker.sh` 在球容器内运行。
+- **不是**：不是 ROS 编译出来的节点；不是 `robot_dog_teleop/scripts/ball_align_grab.py`
+  那条基于手控服务 HTTP 的方案；不是默认就动作的程序（不加 `--enable-motion` 只检测）。
+- **权威来源**：`robot-src/catkin_ws/src/robot_dog_ball_grab/README.md`
