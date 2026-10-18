@@ -80,21 +80,118 @@ def handle_arm(payload: dict[str, Any]) -> str:
     bot = get_dog()
     command = payload.get("command", "cartesian")
 
+    # The arm is servo group 5. Teaching/demo programs can unload this group,
+    # in which case commands are accepted but the joints barely move. Ensure
+    # torque is enabled before any manual arm adjustment.
+    if command in {"cartesian", "polar", "claw", "joint", "rotate", "speed", "servo_speed", "mode"} and hasattr(bot, "load_motor"):
+        bot.load_motor(5)
+
     if command == "cartesian":
         bot.arm(float(payload.get("x", 80)), float(payload.get("z", 60)))
     elif command == "polar":
         bot.arm_polar(float(payload.get("theta", 90)), float(payload.get("radius", 80)))
     elif command == "claw":
         bot.claw(int(payload.get("claw", 128)))
+    elif command == "mode" and hasattr(bot, "arm_mode"):
+        bot.arm_mode(int(payload.get("mode", 0)))
+    elif command == "speed" and hasattr(bot, "arm_speed"):
+        bot.arm_speed(int(payload.get("speed", 128)))
+    elif command == "joint":
+        motor_id = int(payload.get("motor_id", 53))
+        angle = float(payload.get("angle", 0))
+        if motor_id not in (51, 52, 53):
+            raise ValueError("unsupported arm motor id")
+        bot.motor(motor_id, angle)
+    elif command == "rotate":
+        angle = float(payload.get("angle", 0))
+        if angle < -175 or angle > 175:
+            raise ValueError("arm rotate angle must be between -175 and 175")
+        set_arm_rotate_raw(arm_rotate_angle_to_raw(angle))
+    elif command == "servo_speed" and hasattr(bot, "motor_speed"):
+        bot.motor_speed(int(payload.get("speed", 128)))
     elif command == "motor" and hasattr(bot, "arm_motor"):
         bot.arm_motor(payload.get("angles", [0, 0, 0]))
-    elif command == "rotate" and hasattr(bot, "arm_rotate"):
-        bot.arm_rotate(float(payload.get("theta", 0)))
     elif command == "mid" and hasattr(bot, "moveToMid"):
         bot.moveToMid()
     else:
         raise ValueError(f"unknown arm command: {command}")
     return f"arm {command}"
+
+
+def read_arm_feedback() -> dict[str, float]:
+    """Read firmware-reported arm joint angles, working around xgolib 1.4.2.
+
+    xgolib's read_motor() requests 15 values but iterates rx_COUNT + 1,
+    which can attempt to decode a nonexistent 16th motor and raise IndexError.
+    By that point the valid 15-byte response is already present in rx_data.
+    """
+    bot = get_dog()
+    try:
+        angles = bot.read_motor()
+    except IndexError:
+        from xgolib import xgolib_dog as xd
+
+        raw = list(getattr(bot, "rx_data", []))[:15]
+        if len(raw) < 15:
+            raise RuntimeError(f"incomplete motor feedback: {len(raw)} values")
+        angles = []
+        for i, value in enumerate(raw):
+            limit = xd.XGOparam["MOTOR_LIMIT"][i % 3] if i < 12 else xd.XGOparam["MOTOR_LIMIT"][i - 9]
+            angles.append(round(xd.conver2float(value, limit), 2))
+
+    if not isinstance(angles, list) or len(angles) < 15:
+        raise RuntimeError(f"invalid motor feedback: {angles!r}")
+    return {
+        "claw": float(angles[12]),
+        "lower": float(angles[13]),
+        "upper": float(angles[14]),
+    }
+
+
+def read_arm_rotate_raw() -> int:
+    """Read the XGO arm turntable register (ARM_ROTATE, address 0x70)."""
+    bot = get_dog()
+    bot._XGO_DOG__read(0x70, 1)
+    if not bot._XGO_DOG__unpack():
+        raise RuntimeError("arm rotate feedback timeout")
+    return int(bot.rx_data[0])
+
+
+def arm_rotate_raw_to_angle(raw: int) -> float:
+    raw = max(1, min(255, int(raw)))
+    return round(-175.0 + (raw - 1) / 254.0 * 350.0, 2)
+
+
+def arm_rotate_angle_to_raw(angle: float) -> int:
+    angle = max(-175.0, min(175.0, float(angle)))
+    return max(1, min(255, int(round(1.0 + (angle + 175.0) / 350.0 * 254.0))))
+
+
+def set_arm_rotate_raw(value: int) -> None:
+    """Write ARM_ROTATE (0x70) used by newer XGO Mini firmware/app."""
+    value = max(0, min(255, int(value)))
+    bot = get_dog()
+    addr = 0x70
+    length = 0x09
+    mode = 0x00
+    checksum = 255 - ((length + mode + addr + value) % 256)
+    bot.ser.write(bytes([0x55, 0x00, length, mode, addr, value, checksum, 0x00, 0xAA]))
+
+
+def arm_angle_to_u8(angle: float, lo: float, hi: float) -> int:
+    angle = max(lo, min(hi, float(angle)))
+    return max(1, min(255, int(round(1.0 + (angle - lo) / (hi - lo) * 254.0))))
+
+
+def set_servo_ctrl_u8(servo_reg: int, value: int) -> None:
+    """Use the MW-7.1.x SERVO_CTRL protocol (0xC0, subregister, value)."""
+    bot = get_dog()
+    addr = 0xC0
+    data = [int(servo_reg) & 0xFF, max(1, min(255, int(value)))]
+    length = 0x08 + len(data)
+    mode = 0x00
+    checksum = 255 - ((length + mode + addr + sum(data)) % 256)
+    bot.ser.write(bytes([0x55, 0x00, length, mode, addr, *data, checksum, 0x00, 0xAA]))
 
 
 def handle_wheel(payload: dict[str, Any]) -> str:
@@ -118,7 +215,12 @@ def handle_gamepad(payload: dict[str, Any]) -> str:
     requested_mode = str(payload.get("drive_mode", "dog") or "dog")
     mode = "wheel4" if requested_mode == "wheel4" and is_wheel_dog(bot) else "dog"
 
-    if abs(x) < 0.05 and abs(y) < 0.05 and abs(yaw) < 0.05:
+    # Keep the normal 5% gamepad deadzone, but allow the lidar console to
+    # command intentionally slow autonomous motion without being mistaken
+    # for joystick drift.
+    source = str(payload.get("name", "") or "")
+    deadzone = 0.005 if source == "lidar-console" else 0.05
+    if abs(x) < deadzone and abs(y) < deadzone and abs(yaw) < deadzone:
         stop_bot(bot, requested_mode)
         return f"gamepad stop mode={mode}"
 
@@ -216,6 +318,43 @@ def dispatch(payload: dict[str, Any]) -> dict[str, Any]:
             message = handle_gamepad(payload)
         elif kind == "speak":
             message = handle_speak(payload)
+        elif kind == "imu_stable":
+            enabled = bool(payload.get("enabled", False))
+            bot = get_dog()
+            bot.imu(1 if enabled else 0)
+            return {
+                "ok": True,
+                "mode": "manual-runtime",
+                "message": "imu stable on" if enabled else "imu stable off",
+                "enabled": enabled,
+            }
+        elif kind == "imu_yaw":
+            bot = get_dog()
+            return {
+                "ok": True,
+                "mode": "manual-runtime",
+                "yaw": float(bot.read_yaw()),
+            }
+        elif kind == "arm_state":
+            rotate_raw = read_arm_rotate_raw()
+            return {
+                "ok": True,
+                "mode": "manual-runtime",
+                "arm": {
+                    **read_arm_feedback(),
+                    "rotate_raw": rotate_raw,
+                    "rotate": arm_rotate_raw_to_angle(rotate_raw),
+                },
+            }
+        elif kind == "arm_rotate_raw":
+            value = int(payload.get("value", 128))
+            set_arm_rotate_raw(value)
+            return {
+                "ok": True,
+                "mode": "manual-runtime",
+                "message": "arm rotate raw",
+                "value": max(0, min(255, value)),
+            }
         elif kind in {"ping", "health"}:
             message = "pong"
         else:
@@ -231,7 +370,9 @@ def is_active_gamepad_payload(payload: dict[str, Any]) -> bool:
     x = abs(float(payload.get("x", 0)))
     y = abs(float(payload.get("y", 0)))
     yaw = abs(float(payload.get("yaw", 0)))
-    return x >= 0.05 or y >= 0.05 or yaw >= 0.05
+    source = str(payload.get("name", "") or "")
+    deadzone = 0.005 if source == "lidar-console" else 0.05
+    return x >= deadzone or y >= deadzone or yaw >= deadzone
 
 
 def mark_udp_seen(payload: dict[str, Any]) -> None:
