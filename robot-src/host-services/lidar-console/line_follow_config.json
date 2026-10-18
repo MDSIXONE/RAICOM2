@@ -1,0 +1,40 @@
+{
+  "lower": [
+    0,
+    0,
+    0
+  ],
+  "upper": [
+    180,
+    255,
+    30
+  ],
+  "crop_top": 150,
+  "crop": [
+    0,
+    319
+  ],
+  "line_width": [
+    5,
+    100
+  ],
+  "pid_p": 396.0,
+  "pid_i": 0.0,
+  "pid_d": 30.0,
+  "straight_speed": 8.0,
+  "turn_move_speed": 6.0,
+  "turn_speed_min": 16.0,
+  "turn_speed_max": 16.0,
+  "direction": 1.0,
+  "control_hz": 12.0,
+  "lost_confirm_frames": 5,
+  "probe_steps": 6,
+  "probe_step_duration": 1.167,
+  "probe_pause": 0.5,
+  "probe_turn_speed": -16.0,
+  "probe_cooldown": 5.0,
+  "surge_line_width": 75.0,
+  "surge_frames": 3,
+  "surge_turn_duration": 4.2,
+  "surge_turn_speed": -16.0
+}
