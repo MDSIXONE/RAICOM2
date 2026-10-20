@@ -1,0 +1,16 @@
+[Unit]
+Description=DOGRk backup task supervisor (independent of lidar-console)
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/dogrk-supervisor
+ExecStart=/home/pi/RaspberryPi-CM5/xgovenv/bin/python -u /home/pi/dogrk-supervisor/dogrk_supervisor.py
+Restart=always
+RestartSec=2
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
